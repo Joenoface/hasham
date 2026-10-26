@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasham Wi-Fi Hotspot Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandDark: '#0A0A0A',
+                        brandCard: '#141414',
+                        brandTeal: '#00D1B2',
+                        brandTealHover: '#00B89C',
+                        brandYellow: '#FFD700',
+                        brandYellowHover: '#E6C200'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-brandDark text-white min-h-screen font-sans antialiased flex flex-col justify-between selection:bg-brandTeal selection:text-black">
+
+<!-- Header / Navbar -->
+<header class="w-full border-b border-white/10 bg-brandDark/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brandYellow to-brandTeal flex items-center justify-center shadow-lg shadow-brandTeal/20">
+                <span class="text-black font-black text-xl">H</span>
+            </div>
+            <span class="text-xl font-bold tracking-wider text-white">HASHAM <span class="text-brandYellow">HOTSPOT</span></span>
+        </div>
+        <div class="text-xs uppercase tracking-widest px-3 py-1 rounded-full bg-brandTeal/10 border border-brandTeal/30 text-brandTeal font-semibold">
+            Secure M-Pesa Gateway
+        </div>
+    </div>
+</header>
+
+<!-- Main Content Area -->
+<main class="max-w-5xl mx-auto px-6 py-12 flex-grow w-full">
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-extrabold tracking-tight mb-3 text-white">High-Speed <span class="text-brandTeal">Internet Access</span></h1>
+        <p class="text-zinc-400 text-sm max-w-md mx-auto">Select your preferred data bundle below, pay instantly via M-Pesa through Paystack, and get connected automatically.</p>
+    </div>
+
+    <!-- Packages Container -->
+    <div id="packages-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <!-- Dynamic Tiles populated via JS -->
+        <div class="col-span-3 text-center py-12 text-zinc-500 animate-pulse">Loading available packages...</div>
+    </div>
+
+    <!-- Checkout / User Details Modal / Form Section -->
+    <section id="checkout-section" class="max-w-lg mx-auto bg-brandCard border border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden hidden">
+        <div class="absolute -right-16 -top-16 w-48 h-48 bg-brandTeal/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-16 -bottom-16 w-48 h-48 bg-brandYellow/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-white">Complete Connection</h3>
+            <button onclick="closeCheckout()" class="text-zinc-400 hover:text-white text-sm font-semibold">✕ Cancel</button>
+        </div>
+
+        <form id="payment-form" onsubmit="handlePayment(event)" class="space-y-4">
+            <input type="hidden" id="selected-package-id">
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">Full Name</label>
+                <input type="text" id="name" required placeholder="John Doe" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-brandTeal transition">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">Email Address</label>
+                <input type="email" id="email" required placeholder="john@example.com" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-brandTeal transition">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">M-Pesa Phone Number</label>
+                <input type="tel" id="phone" required placeholder="254712345678" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-brandTeal transition">
+            </div>
+
+            <button type="submit" id="pay-btn" class="w-full mt-2 bg-brandYellow hover:bg-brandYellowHover text-black font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-brandYellow/10 transition transform active:scale-95 flex items-center justify-center space-x-2">
+                <span>Pay Now via M-Pesa</span>
+            </button>
+        </form>
+    </section>
+</main>
+
+<!-- Footer -->
+<footer class="w-full border-t border-white/10 py-6 text-center text-xs text-zinc-500">
+    &copy; 2026 Hasham Networks. Powered by Secure Paystack & MikroTik RouterOS.
+</footer>
+
+<!-- Script to Fetch and Render UI -->
+<script>
+    let selectedPackage = null;
+
+    async function fetchPackages() {
+        try {
+            const res = await fetch('/api/packages');
+            const packages = await res.json();
+            const container = document.getElementById('packages-container');
+
+            if(packages.length === 0) {
+                container.innerHTML = `<div class="col-span-3 text-center text-zinc-500">No packages available at the moment.</div>`;
+                return;
+            }
+
+            container.innerHTML = packages.map(pkg => `
+                <div onclick="selectPackage(${pkg.id}, '${pkg.name}', ${pkg.price})" class="group relative bg-gradient-to-b from-white/[0.07] to-white/[0.02] border border-white/10 hover:border-brandTeal/50 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:shadow-brandTeal/10 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brandTeal/10 text-brandTeal border border-brandTeal/20">${pkg.duration_hours ? pkg.duration_hours + ' Hours' : 'Unlimited'}</span>
+                            <span class="text-xs font-mono text-zinc-400">${pkg.speed_limit || 'Standard Speed'}</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-2 group-hover:text-brandTeal transition">${pkg.name}</h3>
+                        <p class="text-zinc-400 text-xs mb-6">${pkg.data_limit_mb ? (pkg.data_limit_mb + ' MB Data Limit') : 'Uncapped Data Bundle'}</p>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-black text-white mb-6">${pkg.currency || 'KES'} ${Number(pkg.price).toLocaleString()}</div>
+                        <button class="w-full bg-brandTeal hover:bg-brandTealHover text-black font-bold py-3 rounded-xl transition shadow-md">
+                            Select Package
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } catch (err) {
+            console.error(err);
+            document.getElementById('packages-container').innerHTML = `<div class="col-span-3 text-center text-red-400">Failed to load bundles. Please refresh.</div>`;
+        }
+    }
+
+    function selectPackage(id, name, price) {
+        selectedPackage = { id, name, price };
+        document.getElementById('selected-package-id').value = id;
+        document.getElementById('checkout-section').classList.remove('hidden');
+        document.getElementById('checkout-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function closeCheckout() {
+        document.getElementById('checkout-section').classList.add('hidden');
+    }
+
+    async function handlePayment(e) {
+        e.preventDefault();
+        const payBtn = document.getElementById('pay-btn');
+        payBtn.disabled = true;
+        payBtn.innerText = 'Initializing M-Pesa Prompt...';
+
+        const payload = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            package_id: document.getElementById('selected-package-id').value
+        };
+
+        try {
+            const res = await fetch('/api/pay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (data.status && data.authorization_url) {
+                window.location.href = data.authorization_url; // Redirect to Paystack Checkout / M-Pesa STK popup
+            } else {
+                alert(data.error || 'Payment initialization failed.');
+                payBtn.disabled = false;
+                payBtn.innerText = 'Pay Now via M-Pesa';
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Network error connecting to payment gateway.');
+            payBtn.disabled = false;
+            payBtn.innerText = 'Pay Now via M-Pesa';
+        }
+    }
+
+    fetchPackages();
+</script>
+</body>
+</html>

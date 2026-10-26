@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - Hasham Hotspot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandDark: '#0A0A0A',
+                        brandCard: '#141414',
+                        brandTeal: '#00D1B2',
+                        brandTealHover: '#00B89C',
+                        brandYellow: '#FFD700'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-brandDark text-white min-h-screen font-sans antialiased flex flex-col justify-between selection:bg-brandTeal selection:text-black">
+
+<!-- Header -->
+<header class="w-full border-b border-white/10 bg-brandDark/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-3xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brandYellow to-brandTeal flex items-center justify-center shadow-lg shadow-brandTeal/20">
+                <span class="text-black font-black text-xl">H</span>
+            </div>
+            <span class="text-xl font-bold tracking-wider text-white">HASHAM <span class="text-brandYellow">HOTSPOT</span></span>
+        </div>
+        <div class="text-xs uppercase tracking-widest px-3 py-1 rounded-full bg-brandTeal/10 border border-brandTeal/30 text-brandTeal font-semibold">
+            Connected
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="max-w-xl mx-auto px-6 py-12 flex-grow w-full flex items-center justify-center">
+    <div id="loading-card" class="w-full bg-brandCard border border-white/10 rounded-3xl p-8 text-center shadow-2xl">
+        <div class="w-12 h-12 border-4 border-brandTeal border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p class="text-zinc-400 text-sm">Verifying payment and activating connection...</p>
+    </div>
+
+    <div id="success-card" class="w-full bg-brandCard border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden hidden">
+        <div class="absolute -right-16 -top-16 w-48 h-48 bg-brandTeal/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="w-16 h-16 bg-brandTeal/10 border border-brandTeal/30 rounded-2xl flex items-center justify-center mx-auto mb-6 text-brandTeal text-3xl shadow-lg">
+            ✓
+        </div>
+
+        <h1 class="text-3xl font-extrabold text-center mb-2">You're Connected!</h1>
+        <p class="text-zinc-400 text-xs text-center mb-8">Your M-Pesa payment was successful and your device has been authorized.</p>
+
+        <!-- Details Box -->
+        <div class="space-y-3 bg-black/40 border border-white/5 rounded-2xl p-4 mb-8 text-sm">
+            <div class="flex justify-between">
+                <span class="text-zinc-500">Customer Name</span>
+                <span id="cust-name" class="font-medium text-white">-</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-zinc-500">Package</span>
+                <span id="pkg-name" class="font-medium text-brandYellow">-</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-zinc-500">Amount Paid</span>
+                <span id="tx-amount" class="font-medium text-white">-</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-zinc-500">Reference</span>
+                <span id="tx-ref" class="font-mono text-xs text-zinc-400">-</span>
+            </div>
+        </div>
+
+        <!-- Countdown Timer Box -->
+        <div class="bg-gradient-to-br from-brandTeal/10 to-transparent border border-brandTeal/20 rounded-2xl p-6 text-center mb-8">
+            <div class="text-xs uppercase tracking-widest text-brandTeal font-semibold mb-2">Voucher Time Remaining</div>
+            <div id="countdown-timer" class="text-4xl font-black font-mono text-white tracking-wider">--:--:--</div>
+        </div>
+
+        <a href="/" class="block w-full text-center bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3.5 rounded-xl transition">
+            Return to Portal
+        </a>
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="w-full border-t border-white/10 py-6 text-center text-xs text-zinc-500">
+    &copy; 2026 Hasham Networks. All rights reserved.
+</footer>
+
+<!-- Script to Fetch Status and Run Countdown -->
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const reference = urlParams.get('reference') || urlParams.get('trxref'); // Paystack appends either reference or trxref
+
+    async function verifyPayment() {
+        if (!reference) {
+            document.getElementById('loading-card').innerHTML = `<p class="text-red-400 text-sm">No transaction reference found.</p>`;
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/status/${reference}`);
+            const data = await res.json();
+
+            if (res.ok) {
+                document.getElementById('loading-card').classList.add('hidden');
+                document.getElementById('success-card').classList.remove('hidden');
+
+                document.getElementById('cust-name').innerText = data.customer_name || 'Valued Customer';
+                document.getElementById('pkg-name').innerText = data.package_name || 'Standard Bundle';
+                document.getElementById('tx-amount').innerText = `${data.currency || 'KES'} ${Number(data.amount).toLocaleString()}`;
+                document.getElementById('tx-ref').innerText = data.reference;
+
+                if (data.expires_at) {
+                    startCountdown(new Date(data.expires_at).getTime());
+                } else {
+                    document.getElementById('countdown-timer').innerText = 'Active (Unlimited)';
+                }
+            } else {
+                document.getElementById('loading-card').innerHTML = `<p class="text-yellow-400 text-sm">Payment is processing or pending verification. Please check back shortly.</p>`;
+            }
+        } catch (err) {
+            console.error(err);
+            document.getElementById('loading-card').innerHTML = `<p class="text-red-400 text-sm">Error verifying transaction status.</p>`;
+        }
+    }
+
+    function startCountdown(expiryTime) {
+        const timerEl = document.getElementById('countdown-timer');
+
+        const interval = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = expiryTime - now;
+
+            if (distance < 0) {
+                clearInterval(interval);
+                timerEl.innerText = "EXPIRED";
+                timerEl.classList.add('text-red-500');
+                return;
+            }
+
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            timerEl.innerText =
+                String(hours).padStart(2, '0') + ":" +
+                String(minutes).padStart(2, '0') + ":" +
+                String(seconds).padStart(2, '0');
+        }, 1000);
+    }
+
+    verifyPayment();
+</script>
+</body>
+</html>

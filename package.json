@@ -1,0 +1,32 @@
+
+{
+  "name": "hasham-payment-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hasham Payment System API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "payments",
+    "express",
+    "mysql",
+    "mikrotik"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.20.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "mysql2": "^3.24.6",
+    "routeros-api": "^1.0.2"
+  }
+}
